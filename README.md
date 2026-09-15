@@ -74,6 +74,28 @@ chat agent has been run against both Anthropic and OpenAI models.
                            exact same chat.build_chat_agent())
 ```
 
+The one cross-link the diagram above doesn't show: `tools.get_executive_summary` (in the
+`tools.py` box, chat-invoked) reaches back into `report_template.py` (drawn above only under
+`graph.py`) to reuse its narrative prompt, instead of duplicating it:
+
+```
+   chat.py / Streamlit chat tab
+      "give me an executive summary" / "how are we doing overall"
+                    │
+                    ▼
+   tools.get_executive_summary()          (in tools.py)
+                    │
+                    ▼
+   service.get_executive_summary()        (in service.py — reads the latest
+                    │                       snapshot, stuck tasks, and trends
+                    │                       straight from memory/store.py)
+                    ▼
+   report_template.generate_narrative()   ◄── same function `render_report`'s
+                    │                          `--narrative` flag calls too —
+                    ▼                          one shared prompt, two entry points
+                   LLM
+```
+
 All three entry points — `report`, `chat`, and the Streamlit app — terminate in the same
 `service.py` functions and the same SQLite database. There is exactly one source of truth for
 task state, so none of the three interfaces can drift out of sync with each other.
