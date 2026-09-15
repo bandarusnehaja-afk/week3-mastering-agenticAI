@@ -161,6 +161,7 @@ SUGGESTIONS = [
     "What's been stuck for more than one sprint?",
     "What changed since last week?",
     "What's blocked right now?",
+    "Give me an executive summary",
 ]
 
 

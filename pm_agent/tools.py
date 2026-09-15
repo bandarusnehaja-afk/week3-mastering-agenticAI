@@ -92,6 +92,19 @@ def compare_last_two_reports() -> str:
 
 
 @tool
+def get_executive_summary() -> str:
+    """Generate a short (3-4 sentence) LLM-written executive summary of the latest weekly
+    report's overall health, covering total tasks, high-risk count, tasks stuck 2+ sprints,
+    and week-over-week completions/new blockers. Use this when asked for 'an executive
+    summary', 'a TL;DR of the sprint', or 'how are we doing overall'. For a task-by-task
+    breakdown use get_current_sprint_snapshot instead — this tool only produces prose."""
+    try:
+        return service.get_executive_summary()
+    except RuntimeError as e:
+        return str(e)
+
+
+@tool
 def run_new_weekly_report(sprint_name: str = "") -> str:
     """Fetch fresh data from Jira, Asana, and Notion, score risk, save a new snapshot to
     memory, and return the generated weekly status report as markdown. Use this when asked
@@ -106,5 +119,6 @@ ALL_TOOLS = [
     get_stuck_tasks,
     get_task_history,
     compare_last_two_reports,
+    get_executive_summary,
     run_new_weekly_report,
 ]

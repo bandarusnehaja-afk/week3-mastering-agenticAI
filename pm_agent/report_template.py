@@ -104,22 +104,34 @@ def render_report(
     return "\n".join(lines)
 
 
+def generate_narrative(stats: dict, sprint_name: Optional[str]) -> str:
+    """Turn a small dict of pre-computed stats into one executive-summary paragraph. The
+    LLM only ever phrases numbers that code already computed — it never counts anything
+    itself. Shared by the deterministic report's `--narrative` flag and the chat tool
+    `get_executive_summary`, so both paths use the exact same prompt."""
+    from .config import get_llm
+    llm = get_llm()
+    prompt = (
+        "Write a 3-4 sentence executive summary for a program manager, based on these "
+        f"sprint stats for {sprint_name or 'the current sprint'}: {stats}. "
+        "Be direct and specific about risk. No preamble, no headers."
+    )
+    return llm.invoke(prompt).content
+
+
+def stats_from_scored(scored: List[TaskRisk], trends: Optional[dict], stuck: list) -> dict:
+    return {
+        "total_tasks": len(scored),
+        "high_risk": sum(1 for t in scored if t.risk_level == "high"),
+        "stuck_2plus_sprints": len(stuck),
+        "completed_this_week": len(trends["completed"]) if trends else 0,
+        "newly_blocked_this_week": len(trends["newly_blocked"]) if trends else 0,
+    }
+
+
 def _llm_narrative(scored, trends, stuck, sprint_name) -> str:
     try:
-        from .config import get_llm
-        llm = get_llm()
-        stats = {
-            "total_tasks": len(scored),
-            "high_risk": sum(1 for t in scored if t.risk_level == "high"),
-            "stuck_2plus_sprints": len(stuck),
-            "completed_this_week": len(trends["completed"]) if trends else 0,
-            "newly_blocked_this_week": len(trends["newly_blocked"]) if trends else 0,
-        }
-        prompt = (
-            "Write a 3-4 sentence executive summary for a program manager, based on these "
-            f"sprint stats for {sprint_name or 'the current sprint'}: {stats}. "
-            "Be direct and specific about risk. No preamble, no headers."
-        )
-        return llm.invoke(prompt).content
+        stats = stats_from_scored(scored, trends, stuck)
+        return generate_narrative(stats, sprint_name)
     except Exception as e:
         return f"_(narrative summary unavailable: {e})_"

@@ -110,6 +110,34 @@ def compare_run_to_previous(run_id: int) -> Optional[dict]:
     return out
 
 
+def get_executive_summary(sprint_name: Optional[str] = None) -> str:
+    """LLM-written 3-4 sentence summary of the latest report's overall health. Raises
+    RuntimeError if no report exists yet, or whatever the LLM client raises on failure —
+    callers (the chat tool) are expected to catch and surface those, not swallow them,
+    since this is the one query helper that costs money and can fail independently of
+    SQLite."""
+    from .report_template import generate_narrative
+
+    store = get_store()
+    latest = store.latest_run()
+    if not latest:
+        raise RuntimeError("No report has been generated yet. Run the weekly report first.")
+
+    run_id = latest["run_id"]
+    snapshot = get_snapshot_for_run(run_id)
+    stuck = get_stuck_tasks(min_sprints=2)
+    trends = compare_run_to_previous(run_id)
+
+    stats = {
+        "total_tasks": len(snapshot),
+        "high_risk": sum(1 for r in snapshot if r["risk_level"] == "high"),
+        "stuck_2plus_sprints": len(stuck),
+        "completed_this_week": len(trends["completed"]) if trends else 0,
+        "newly_blocked_this_week": len(trends["newly_blocked"]) if trends else 0,
+    }
+    return generate_narrative(stats, sprint_name or latest["sprint_name"])
+
+
 def get_risk_trend(limit: int = 10) -> list:
     """Risk-level counts per run, oldest first, for charting trend over time."""
     store = get_store()
