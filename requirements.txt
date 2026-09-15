@@ -1,0 +1,11 @@
+langchain>=0.3
+langchain-core>=0.3
+langgraph>=0.2
+langchain-anthropic>=0.3
+python-dotenv>=1.0
+requests>=2.31
+streamlit>=1.38
+pandas>=2.0
+
+# Uncomment if you set LLM_PROVIDER=openai instead of anthropic:
+# langchain-openai>=0.2

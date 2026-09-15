@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+.idea/
+data/*.sqlite3
+reports/*.md
+!reports/.gitkeep
+!data/.gitkeep
